@@ -1,0 +1,83 @@
+---
+title: "Total market of scissors"
+author: "Ali Ghanbari"
+date: "April 24, 2018"
+output: html_document
+---
+
+
+```{r}
+library(readxl)
+library(caret)
+library(corrplot)
+tel<-read_xlsx("C:\\Users\\Ali\\Documents\\Texas State\\My Research\\Data\\Data preparation\\telehandlers preparation for market size.xlsx")
+
+set.seed(1234)
+```
+now we split the data into train and test data set
+```{r}
+ind<-createDataPartition(tel$Year,p=0.8,list = FALSE)
+train<-tel[ind,]
+test<-tel[-ind,]
+```
+Deleteing N/A variables
+```{r}
+nearzero<-nearZeroVar(train,saveMetrics = TRUE)
+train<-train[,!nearzero$nzv]
+```
+```{r}
+View(train)
+```
+Columsn 1 and 2 are not needed 
+```{r}
+train<-train[,-c(1,2)]
+```
+the cor can be checked
+```{r}
+corrplot(cor(tel[,3:14]),method = "number")
+```
+```{r}
+c<-findCorrelation(cor(train[,-1]),cutoff = 0.85)
+names(train[c])
+```
+```{r}
+c<-findCorrelation(cor(train[,-1]),cutoff = 0.75)
+names(train[c])
+```
+principal component analysis can be applied for preprocess
+```{r}
+tc<-trainControl(method = "repeatedcv",number = 5,repeats = 3,preProcOptions = "pca")
+```
+```{r}
+svmradial<-train(TMT~.,data=train,method="svmRadial",trControl=tc)
+ p<-predict(svmradial,newdata = test)
+svmradial
+p
+
+plot(svmradial)
+```
+now linear svm
+```{r}
+svmlinear<-train(TMT~.,data=train,method="svmLinear",trControl=tc)
+svmlinear
+p<-predict(svmlinear,test)
+p
+```
+the neural netwrok
+```{r}
+ nn<-train(TMT~.,data=train,method="nnet",trControl=tc)
+nn
+p<-predict(nn,test)
+p
+
+plot(nn)
+```
+Random forest
+```{r}
+RF<-train(TMT~.,data=train,method="rf",trControl=tc)
+p<-predict(RF,test)
+RF
+p
+plot(RF)
+```
+
